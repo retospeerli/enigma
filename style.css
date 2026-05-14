@@ -179,15 +179,6 @@ input[type="range"] {
   font-size: .82rem;
 }
 
-.explain {
-  background: #0f1621;
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 14px;
-  color: var(--muted);
-  padding: 14px;
-  line-height: 1.45;
-}
-
 .stage {
   position: relative;
   display: grid;
