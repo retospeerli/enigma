@@ -12,12 +12,30 @@ PAIRS.forEach(([a, b]) => {
   pairMap[b] = a;
 });
 
-const clickSounds = [
+/* -------------------------------------------------------
+   SOUND
+   Die Klänge werden vorgeladen.
+   Bei jedem verarbeiteten Buchstaben wird ein Klang sofort
+   gestartet. Es wird NICHT gewartet, bis der Klang fertig ist.
+------------------------------------------------------- */
+
+const clickSoundFiles = [
   "audio/klick1.wav",
   "audio/klick2.wav",
   "audio/klick3.wav",
   "audio/klick4.wav"
 ];
+
+const clickSoundPool = clickSoundFiles.map(file => {
+  const audio = new Audio(file);
+  audio.preload = "auto";
+  audio.load();
+  return audio;
+});
+
+/* -------------------------------------------------------
+   HTML-ELEMENTE
+------------------------------------------------------- */
 
 const svg = document.getElementById("rotorSvg");
 const keyButtons = document.getElementById("keyButtons");
@@ -33,6 +51,10 @@ const cipherText = document.getElementById("cipherText");
 const rotorState = document.getElementById("rotorState");
 const stepState = document.getElementById("stepState");
 
+/* -------------------------------------------------------
+   STATUS
+------------------------------------------------------- */
+
 let selectedKey = "A";
 let rotorOffset = 0;
 let currentIndex = 0;
@@ -46,6 +68,10 @@ const textNodes = {};
 const wireNodes = [];
 const socketNodes = [];
 
+/* -------------------------------------------------------
+   ROTOR-GEOMETRIE
+------------------------------------------------------- */
+
 const CX = 450;
 const CY = 450;
 const OUTER_R = 365;
@@ -55,7 +81,11 @@ const INNER_R = 110;
 
 function svgEl(name, attrs = {}) {
   const el = document.createElementNS("http://www.w3.org/2000/svg", name);
-  Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+
+  Object.entries(attrs).forEach(([key, value]) => {
+    el.setAttribute(key, value);
+  });
+
   return el;
 }
 
@@ -69,11 +99,16 @@ function angleOf(index) {
 
 function polar(radius, angleDeg) {
   const angle = (angleDeg - 90) * Math.PI / 180;
+
   return {
     x: CX + radius * Math.cos(angle),
     y: CY + radius * Math.sin(angle)
   };
 }
+
+/* -------------------------------------------------------
+   BEDIENUNG
+------------------------------------------------------- */
 
 function buildKeyButtons() {
   ALPHABET.forEach(letter => {
@@ -98,6 +133,19 @@ function updateKeyButtons() {
     btn.classList.toggle("active", btn.dataset.letter === selectedKey);
   });
 }
+
+function setMode(newMode) {
+  mode = newMode;
+
+  encryptBtn.classList.toggle("active", mode === "encrypt");
+  decryptBtn.classList.toggle("active", mode === "decrypt");
+
+  resetAll();
+}
+
+/* -------------------------------------------------------
+   ROTOR AUFBAU
+------------------------------------------------------- */
 
 function buildRotor() {
   svg.innerHTML = "";
@@ -158,6 +206,7 @@ function buildRotor() {
 
     rotorGroup.appendChild(s1);
     rotorGroup.appendChild(s2);
+
     socketNodes.push(s1, s2);
   });
 
@@ -245,15 +294,13 @@ function orthogonalBend(p1, p2) {
   return { x: p1.x, y: p2.y };
 }
 
-function setMode(newMode) {
-  mode = newMode;
-  encryptBtn.classList.toggle("active", mode === "encrypt");
-  decryptBtn.classList.toggle("active", mode === "decrypt");
-  resetAll();
-}
+/* -------------------------------------------------------
+   ROTOR-STELLUNG
+------------------------------------------------------- */
 
 function setRotorFromKey() {
   rotorOffset = indexOf(selectedKey);
+
   updateRotorRotation();
   updateRotorState();
   updateKeyButtons();
@@ -271,15 +318,28 @@ function updateRotorState() {
   rotorState.textContent = ALPHABET[rotorOffset % 26];
 }
 
+function rotateOneStep() {
+  rotorOffset = (rotorOffset + 1) % 26;
+
+  updateRotorRotation();
+  updateRotorState();
+}
+
+/* -------------------------------------------------------
+   VERSCHLÜSSELUNG / ENTSCHLÜSSELUNG
+------------------------------------------------------- */
+
 function shiftedToRotorLetter(screenLetter) {
   const screenIndex = indexOf(screenLetter);
   const rotorIndex = (screenIndex - rotorOffset + 26) % 26;
+
   return ALPHABET[rotorIndex];
 }
 
 function rotorToScreenLetter(rotorLetter) {
   const rotorIndex = indexOf(rotorLetter);
   const screenIndex = (rotorIndex + rotorOffset) % 26;
+
   return ALPHABET[screenIndex];
 }
 
@@ -294,6 +354,10 @@ function transformLetter(screenLetter) {
     screenOutput
   };
 }
+
+/* -------------------------------------------------------
+   MARKIERUNGEN
+------------------------------------------------------- */
 
 function clearHighlights() {
   Object.values(letterNodes).forEach(node => {
@@ -317,6 +381,7 @@ function findWire(a, b) {
   return wireNodes.find(wire => {
     const wa = wire.dataset.a;
     const wb = wire.dataset.b;
+
     return (wa === a && wb === b) || (wa === b && wb === a);
   });
 }
@@ -329,11 +394,9 @@ function highlightSockets(a, b) {
   });
 }
 
-function rotateOneStep() {
-  rotorOffset = (rotorOffset + 1) % 26;
-  updateRotorRotation();
-  updateRotorState();
-}
+/* -------------------------------------------------------
+   ABLAUF
+------------------------------------------------------- */
 
 function prepareRun() {
   inputText = mode === "encrypt"
@@ -381,6 +444,10 @@ async function processOneCharacter() {
     return true;
   }
 
+  /*
+    Der Klick wird direkt durch den Verschlüsselungsschritt ausgelöst.
+    Es gibt keinen eigenen Sound-Timer.
+  */
   playRandomClick();
 
   const result = transformLetter(char);
@@ -388,6 +455,7 @@ async function processOneCharacter() {
 
   letterNodes[char].classList.add("active-in");
   textNodes[char].classList.add("dark");
+
   stepState.textContent = `${char} → ?`;
 
   await wait(phaseDuration());
@@ -411,37 +479,54 @@ async function processOneCharacter() {
   await wait(phaseDuration());
 
   rotateOneStep();
+
   currentIndex++;
 
   return true;
 }
 
+/* -------------------------------------------------------
+   SOUND
+------------------------------------------------------- */
+
 function playRandomClick() {
-  const file = clickSounds[Math.floor(Math.random() * clickSounds.length)];
-  const sound = new Audio(file);
+  const baseSound =
+    clickSoundPool[
+      Math.floor(Math.random() * clickSoundPool.length)
+    ];
+
+  const sound = baseSound.cloneNode(true);
+
   sound.volume = 0.8;
+  sound.currentTime = 0;
+
   sound.play().catch(() => {});
 }
+
+/* -------------------------------------------------------
+   TEMPO
+   Minimum: 0.5 Zeichen pro Sekunde = 2 Sekunden pro Zeichen
+   Maximum: 10 Zeichen pro Sekunde
+------------------------------------------------------- */
 
 function phaseDuration() {
   const charsPerSecond = Number(speedRange.value);
   const millisecondsPerCharacter = 1000 / charsPerSecond;
+
   return millisecondsPerCharacter / 3;
 }
 
 function updateSpeedLabel() {
-  const value = Number(speedRange.value);
-
-  if (value === 0.5) {
-    speedLabel.textContent = "0.5";
-  } else {
-    speedLabel.textContent = String(value);
-  }
+  speedLabel.textContent = speedRange.value;
 }
 
 function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+/* -------------------------------------------------------
+   BUTTONS
+------------------------------------------------------- */
 
 function setButtons(disabled) {
   startBtn.disabled = disabled;
@@ -501,6 +586,10 @@ function normalizeTextareas() {
   plainText.value = plainText.value.toUpperCase();
   cipherText.value = cipherText.value.toUpperCase();
 }
+
+/* -------------------------------------------------------
+   START
+------------------------------------------------------- */
 
 buildKeyButtons();
 buildRotor();
