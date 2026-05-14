@@ -254,7 +254,7 @@ function buildRotor() {
     textNodes[letter] = text;
   });
 
-  updateRotorRotation();
+  updateRotorRotation(false);
 }
 
 function buildWirePath(a, b, pairIndex) {
@@ -297,17 +297,29 @@ function orthogonalBend(p1, p2) {
 function setRotorFromKey() {
   rotorOffset = indexOf(selectedKey);
 
-  updateRotorRotation();
+  updateRotorRotation(false);
   updateRotorState();
   updateKeyButtons();
 }
 
-function updateRotorRotation() {
+function updateRotorRotation(animated = true) {
   const group = document.getElementById("rotorGroup");
   if (!group) return;
 
   const degrees = rotorOffset * (360 / 26);
-  group.setAttribute("transform", `rotate(${degrees} ${CX} ${CY})`);
+
+  if (!animated) {
+    group.style.transition = "none";
+    group.style.transform = `rotate(${degrees}deg)`;
+
+    requestAnimationFrame(() => {
+      group.style.transition = "";
+    });
+
+    return;
+  }
+
+  group.style.transform = `rotate(${degrees}deg)`;
 }
 
 function updateRotorState() {
@@ -317,7 +329,7 @@ function updateRotorState() {
 function rotateOneStep() {
   rotorOffset = (rotorOffset + 1) % 26;
 
-  updateRotorRotation();
+  updateRotorRotation(true);
   updateRotorState();
 }
 
