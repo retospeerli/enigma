@@ -12,13 +12,6 @@ PAIRS.forEach(([a, b]) => {
   pairMap[b] = a;
 });
 
-/* -------------------------------------------------------
-   SOUND
-   Die Klänge werden vorgeladen.
-   Bei jedem verarbeiteten Buchstaben wird ein Klang sofort
-   gestartet. Es wird NICHT gewartet, bis der Klang fertig ist.
-------------------------------------------------------- */
-
 const clickSoundFiles = [
   "audio/klick1.wav",
   "audio/klick2.wav",
@@ -32,10 +25,6 @@ const clickSoundPool = clickSoundFiles.map(file => {
   audio.load();
   return audio;
 });
-
-/* -------------------------------------------------------
-   HTML-ELEMENTE
-------------------------------------------------------- */
 
 const svg = document.getElementById("rotorSvg");
 const keyButtons = document.getElementById("keyButtons");
@@ -51,10 +40,6 @@ const cipherText = document.getElementById("cipherText");
 const rotorState = document.getElementById("rotorState");
 const stepState = document.getElementById("stepState");
 
-/* -------------------------------------------------------
-   STATUS
-------------------------------------------------------- */
-
 let selectedKey = "A";
 let rotorOffset = 0;
 let currentIndex = 0;
@@ -67,17 +52,19 @@ const letterNodes = {};
 const textNodes = {};
 const wireNodes = [];
 const socketNodes = [];
-
-/* -------------------------------------------------------
-   ROTOR-GEOMETRIE
-------------------------------------------------------- */
+const radialNodes = {};
 
 const CX = 450;
 const CY = 450;
-const OUTER_R = 365;
+
+const OUTER_RING_R = 400;
+const LETTER_R = 365;
+const LETTER_CIRCLE_R = 28;
+
 const ROTOR_R = 270;
-const SOCKET_R = 220;
-const INNER_R = 110;
+const SOCKET_R = 268;
+const INNER_WIRE_R = 200;
+const INNER_HOLE_R = 112;
 
 function svgEl(name, attrs = {}) {
   const el = document.createElementNS("http://www.w3.org/2000/svg", name);
@@ -105,10 +92,6 @@ function polar(radius, angleDeg) {
     y: CY + radius * Math.sin(angle)
   };
 }
-
-/* -------------------------------------------------------
-   BEDIENUNG
-------------------------------------------------------- */
 
 function buildKeyButtons() {
   ALPHABET.forEach(letter => {
@@ -143,19 +126,17 @@ function setMode(newMode) {
   resetAll();
 }
 
-/* -------------------------------------------------------
-   ROTOR AUFBAU
-------------------------------------------------------- */
-
 function buildRotor() {
   svg.innerHTML = "";
   wireNodes.length = 0;
   socketNodes.length = 0;
 
+  Object.keys(radialNodes).forEach(key => delete radialNodes[key]);
+
   svg.appendChild(svgEl("circle", {
     cx: CX,
     cy: CY,
-    r: 400,
+    r: OUTER_RING_R,
     class: "outer-ring"
   }));
 
@@ -163,6 +144,28 @@ function buildRotor() {
     d: "M450 36 L435 72 L465 72 Z",
     class: "pointer"
   }));
+
+  const radialGroup = svgEl("g", { id: "radialGroup" });
+  svg.appendChild(radialGroup);
+
+  ALPHABET.forEach((letter, i) => {
+    const angle = angleOf(i);
+
+    const letterEdge = polar(LETTER_R - LETTER_CIRCLE_R + 2, angle);
+    const rotorEdge = polar(ROTOR_R, angle);
+
+    const radial = svgEl("line", {
+      x1: letterEdge.x,
+      y1: letterEdge.y,
+      x2: rotorEdge.x,
+      y2: rotorEdge.y,
+      class: "radial-wire",
+      "data-letter": letter
+    });
+
+    radialGroup.appendChild(radial);
+    radialNodes[letter] = radial;
+  });
 
   const rotorGroup = svgEl("g", { id: "rotorGroup" });
   svg.appendChild(rotorGroup);
@@ -213,7 +216,7 @@ function buildRotor() {
   rotorGroup.appendChild(svgEl("circle", {
     cx: CX,
     cy: CY,
-    r: INNER_R,
+    r: INNER_HOLE_R,
     class: "inner-hole"
   }));
 
@@ -225,12 +228,12 @@ function buildRotor() {
   }));
 
   ALPHABET.forEach((letter, i) => {
-    const p = polar(OUTER_R, angleOf(i));
+    const p = polar(LETTER_R, angleOf(i));
 
     const circle = svgEl("circle", {
       cx: p.x,
       cy: p.y,
-      r: 28,
+      r: LETTER_CIRCLE_R,
       class: "letter-circle",
       "data-letter": letter
     });
@@ -261,23 +264,20 @@ function buildWirePath(a, b, pairIndex) {
   const start = polar(SOCKET_R, angleOf(ia));
   const end = polar(SOCKET_R, angleOf(ib));
 
-  const midRadiusA = 145 + (pairIndex % 4) * 18;
-  const midRadiusB = 150 + ((pairIndex + 2) % 4) * 18;
+  const layer = pairIndex % 5;
+  const r1 = INNER_WIRE_R - layer * 18;
+  const r2 = INNER_WIRE_R - ((layer + 2) % 5) * 18;
 
-  const pa = polar(midRadiusA, angleOf(ia));
-  const pb = polar(midRadiusB, angleOf(ib));
+  const p1 = polar(r1, angleOf(ia));
+  const p2 = polar(r2, angleOf(ib));
 
-  const bend1 = orthogonalBend(start, pa);
-  const bend2 = orthogonalBend(pa, pb);
-  const bend3 = orthogonalBend(pb, end);
+  const p3 = orthogonalBend(p1, p2);
 
   const d = [
     `M ${start.x.toFixed(1)} ${start.y.toFixed(1)}`,
-    `L ${bend1.x.toFixed(1)} ${bend1.y.toFixed(1)}`,
-    `L ${pa.x.toFixed(1)} ${pa.y.toFixed(1)}`,
-    `L ${bend2.x.toFixed(1)} ${bend2.y.toFixed(1)}`,
-    `L ${pb.x.toFixed(1)} ${pb.y.toFixed(1)}`,
-    `L ${bend3.x.toFixed(1)} ${bend3.y.toFixed(1)}`,
+    `L ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`,
+    `L ${p3.x.toFixed(1)} ${p3.y.toFixed(1)}`,
+    `L ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`,
     `L ${end.x.toFixed(1)} ${end.y.toFixed(1)}`
   ].join(" ");
 
@@ -293,10 +293,6 @@ function orthogonalBend(p1, p2) {
 
   return { x: p1.x, y: p2.y };
 }
-
-/* -------------------------------------------------------
-   ROTOR-STELLUNG
-------------------------------------------------------- */
 
 function setRotorFromKey() {
   rotorOffset = indexOf(selectedKey);
@@ -325,10 +321,6 @@ function rotateOneStep() {
   updateRotorState();
 }
 
-/* -------------------------------------------------------
-   VERSCHLÜSSELUNG / ENTSCHLÜSSELUNG
-------------------------------------------------------- */
-
 function shiftedToRotorLetter(screenLetter) {
   const screenIndex = indexOf(screenLetter);
   const rotorIndex = (screenIndex - rotorOffset + 26) % 26;
@@ -355,10 +347,6 @@ function transformLetter(screenLetter) {
   };
 }
 
-/* -------------------------------------------------------
-   MARKIERUNGEN
-------------------------------------------------------- */
-
 function clearHighlights() {
   Object.values(letterNodes).forEach(node => {
     node.classList.remove("active-in", "active-out");
@@ -373,6 +361,10 @@ function clearHighlights() {
   });
 
   socketNodes.forEach(node => {
+    node.classList.remove("active");
+  });
+
+  Object.values(radialNodes).forEach(node => {
     node.classList.remove("active");
   });
 }
@@ -394,9 +386,11 @@ function highlightSockets(a, b) {
   });
 }
 
-/* -------------------------------------------------------
-   ABLAUF
-------------------------------------------------------- */
+function highlightRadial(screenLetter) {
+  if (radialNodes[screenLetter]) {
+    radialNodes[screenLetter].classList.add("active");
+  }
+}
 
 function prepareRun() {
   inputText = mode === "encrypt"
@@ -444,10 +438,6 @@ async function processOneCharacter() {
     return true;
   }
 
-  /*
-    Der Klick wird direkt durch den Verschlüsselungsschritt ausgelöst.
-    Es gibt keinen eigenen Sound-Timer.
-  */
   playRandomClick();
 
   const result = transformLetter(char);
@@ -455,6 +445,7 @@ async function processOneCharacter() {
 
   letterNodes[char].classList.add("active-in");
   textNodes[char].classList.add("dark");
+  highlightRadial(char);
 
   stepState.textContent = `${char} → ?`;
 
@@ -470,6 +461,7 @@ async function processOneCharacter() {
 
   letterNodes[result.screenOutput].classList.add("active-out");
   textNodes[result.screenOutput].classList.add("dark");
+  highlightRadial(result.screenOutput);
 
   outputText += result.screenOutput;
   writeOutput();
@@ -485,10 +477,6 @@ async function processOneCharacter() {
   return true;
 }
 
-/* -------------------------------------------------------
-   SOUND
-------------------------------------------------------- */
-
 function playRandomClick() {
   const baseSound =
     clickSoundPool[
@@ -502,12 +490,6 @@ function playRandomClick() {
 
   sound.play().catch(() => {});
 }
-
-/* -------------------------------------------------------
-   TEMPO
-   Minimum: 0.5 Zeichen pro Sekunde = 2 Sekunden pro Zeichen
-   Maximum: 10 Zeichen pro Sekunde
-------------------------------------------------------- */
 
 function phaseDuration() {
   const charsPerSecond = Number(speedRange.value);
@@ -523,10 +505,6 @@ function updateSpeedLabel() {
 function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
-
-/* -------------------------------------------------------
-   BUTTONS
-------------------------------------------------------- */
 
 function setButtons(disabled) {
   startBtn.disabled = disabled;
@@ -586,10 +564,6 @@ function normalizeTextareas() {
   plainText.value = plainText.value.toUpperCase();
   cipherText.value = cipherText.value.toUpperCase();
 }
-
-/* -------------------------------------------------------
-   START
-------------------------------------------------------- */
 
 buildKeyButtons();
 buildRotor();
