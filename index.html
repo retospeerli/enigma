@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mini-Enigma</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Rotor-Verschlüsselung einfach erklärt</p>
+        <h1>Mini-Enigma</h1>
+        <p class="lead">
+          Stelle den Schlüsselbuchstaben ein. Danach wird jeder Buchstabe über den Rotor
+          verschlüsselt. Nach jedem Buchstaben dreht sich der Rotor einen Schritt weiter.
+        </p>
+      </div>
+      <div class="badge">1 Rotor<br>didaktisch vereinfacht</div>
+    </section>
+
+    <section class="panel controls">
+      <div class="control">
+        <label for="keySelect">Schlüsselbuchstabe</label>
+        <select id="keySelect"></select>
+      </div>
+
+      <div class="control">
+        <label for="modeSelect">Modus</label>
+        <select id="modeSelect">
+          <option value="encrypt">Verschlüsseln</option>
+          <option value="decrypt">Entschlüsseln</option>
+        </select>
+      </div>
+
+      <div class="control">
+        <label for="speedRange">Animation</label>
+        <input id="speedRange" type="range" min="250" max="1600" value="900" step="50">
+      </div>
+
+      <button id="startBtn">Start</button>
+      <button id="stepBtn" class="secondary">Einzelschritt</button>
+      <button id="resetBtn" class="ghost">Zurücksetzen</button>
+    </section>
+
+    <section class="workspace">
+      <section class="panel textpanel">
+        <label for="plainText">Klartext</label>
+        <textarea id="plainText" spellcheck="false" placeholder="Text eingeben..."></textarea>
+
+        <label for="cipherText">Geheimtext</label>
+        <textarea id="cipherText" spellcheck="false" placeholder="Hier erscheint die verschlüsselte Nachricht..."></textarea>
+
+        <p class="hint">
+          Leerzeichen und Satzzeichen bleiben erhalten. Verschlüsselt werden nur die Buchstaben A–Z.
+        </p>
+      </section>
+
+      <section class="machine panel">
+        <div class="status">
+          <div>
+            <span>Aktueller Rotorstand</span>
+            <strong id="rotorState">A</strong>
+          </div>
+          <div>
+            <span>Aktueller Schritt</span>
+            <strong id="stepState">bereit</strong>
+          </div>
+        </div>
+
+        <div class="rotor-wrap">
+          <svg id="rotorSvg" viewBox="0 0 700 700" aria-label="Mini-Enigma-Rotor"></svg>
+        </div>
+
+        <div class="explain" id="explainBox">
+          Gib einen Text ein und starte die Animation.
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
