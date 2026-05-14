@@ -17,6 +17,7 @@ const keyButtons = document.getElementById("keyButtons");
 const encryptBtn = document.getElementById("encryptBtn");
 const decryptBtn = document.getElementById("decryptBtn");
 const speedRange = document.getElementById("speedRange");
+const speedLabel = document.getElementById("speedLabel");
 const startBtn = document.getElementById("startBtn");
 const stepBtn = document.getElementById("stepBtn");
 const resetBtn = document.getElementById("resetBtn");
@@ -74,12 +75,15 @@ function buildKeyButtons() {
     btn.className = "key";
     btn.textContent = letter;
     btn.dataset.letter = letter;
+
     btn.addEventListener("click", () => {
       selectedKey = letter;
       resetAll();
     });
+
     keyButtons.appendChild(btn);
   });
+
   updateKeyButtons();
 }
 
@@ -94,23 +98,25 @@ function buildRotor() {
   wireNodes.length = 0;
   socketNodes.length = 0;
 
-  const outer = svgEl("circle", {
-    cx: CX, cy: CY, r: 400,
+  svg.appendChild(svgEl("circle", {
+    cx: CX,
+    cy: CY,
+    r: 400,
     class: "outer-ring"
-  });
-  svg.appendChild(outer);
+  }));
 
-  const pointer = svgEl("path", {
+  svg.appendChild(svgEl("path", {
     d: "M450 36 L435 72 L465 72 Z",
     class: "pointer"
-  });
-  svg.appendChild(pointer);
+  }));
 
   const rotorGroup = svgEl("g", { id: "rotorGroup" });
   svg.appendChild(rotorGroup);
 
   rotorGroup.appendChild(svgEl("circle", {
-    cx: CX, cy: CY, r: ROTOR_R,
+    cx: CX,
+    cy: CY,
+    r: ROTOR_R,
     class: "rotor-body"
   }));
 
@@ -150,12 +156,16 @@ function buildRotor() {
   });
 
   rotorGroup.appendChild(svgEl("circle", {
-    cx: CX, cy: CY, r: INNER_R,
+    cx: CX,
+    cy: CY,
+    r: INNER_R,
     class: "inner-hole"
   }));
 
   rotorGroup.appendChild(svgEl("circle", {
-    cx: CX, cy: CY, r: 34,
+    cx: CX,
+    cy: CY,
+    r: 34,
     class: "center-dot"
   }));
 
@@ -176,6 +186,7 @@ function buildRotor() {
       class: "letter-text",
       "data-letter": letter
     });
+
     text.textContent = letter;
 
     svg.appendChild(circle);
@@ -220,9 +231,11 @@ function buildWirePath(a, b, pairIndex) {
 
 function orthogonalBend(p1, p2) {
   const horizontalFirst = Math.abs(p1.x - CX) > Math.abs(p1.y - CY);
+
   if (horizontalFirst) {
     return { x: p2.x, y: p1.y };
   }
+
   return { x: p1.x, y: p2.y };
 }
 
@@ -243,6 +256,7 @@ function setRotorFromKey() {
 function updateRotorRotation() {
   const group = document.getElementById("rotorGroup");
   if (!group) return;
+
   const degrees = rotorOffset * (360 / 26);
   group.setAttribute("transform", `rotate(${degrees} ${CX} ${CY})`);
 }
@@ -267,14 +281,30 @@ function transformLetter(screenLetter) {
   const rotorInput = shiftedToRotorLetter(screenLetter);
   const rotorOutput = pairMap[rotorInput];
   const screenOutput = rotorToScreenLetter(rotorOutput);
-  return { rotorInput, rotorOutput, screenOutput };
+
+  return {
+    rotorInput,
+    rotorOutput,
+    screenOutput
+  };
 }
 
 function clearHighlights() {
-  Object.values(letterNodes).forEach(n => n.classList.remove("active-in", "active-out"));
-  Object.values(textNodes).forEach(n => n.classList.remove("dark"));
-  wireNodes.forEach(n => n.classList.remove("active"));
-  socketNodes.forEach(n => n.classList.remove("active"));
+  Object.values(letterNodes).forEach(node => {
+    node.classList.remove("active-in", "active-out");
+  });
+
+  Object.values(textNodes).forEach(node => {
+    node.classList.remove("dark");
+  });
+
+  wireNodes.forEach(node => {
+    node.classList.remove("active");
+  });
+
+  socketNodes.forEach(node => {
+    node.classList.remove("active");
+  });
 }
 
 function findWire(a, b) {
@@ -306,16 +336,23 @@ function prepareRun() {
 
   outputText = "";
   currentIndex = 0;
+
   setRotorFromKey();
   clearHighlights();
 
-  if (mode === "encrypt") cipherText.value = "";
-  else plainText.value = "";
+  if (mode === "encrypt") {
+    cipherText.value = "";
+  } else {
+    plainText.value = "";
+  }
 }
 
 function writeOutput() {
-  if (mode === "encrypt") cipherText.value = outputText;
-  else plainText.value = outputText;
+  if (mode === "encrypt") {
+    cipherText.value = outputText;
+  } else {
+    plainText.value = outputText;
+  }
 }
 
 async function processOneCharacter() {
@@ -335,8 +372,10 @@ async function processOneCharacter() {
     outputText += char;
     writeOutput();
     currentIndex++;
+
     stepState.textContent = "übersprungen";
     explainBox.textContent = `„${char}“ ist kein Buchstabe A–Z und bleibt unverändert.`;
+
     return true;
   }
 
@@ -345,16 +384,21 @@ async function processOneCharacter() {
 
   letterNodes[char].classList.add("active-in");
   textNodes[char].classList.add("dark");
+
   stepState.textContent = `${char} → ?`;
   explainBox.textContent = `Der Strom tritt bei ${char} ein. Im Rotor landet er beim Anschluss ${result.rotorInput}.`;
 
-  await wait(speed());
+  await wait(phaseDuration());
 
-  if (wire) wire.classList.add("active");
+  if (wire) {
+    wire.classList.add("active");
+  }
+
   highlightSockets(result.rotorInput, result.rotorOutput);
+
   explainBox.textContent = `Im Rotor folgt der Strom dem Draht von ${result.rotorInput} nach ${result.rotorOutput}.`;
 
-  await wait(speed());
+  await wait(phaseDuration());
 
   letterNodes[result.screenOutput].classList.add("active-out");
   textNodes[result.screenOutput].classList.add("dark");
@@ -365,15 +409,24 @@ async function processOneCharacter() {
   stepState.textContent = `${char} → ${result.screenOutput}`;
   explainBox.textContent = `${char} wird zu ${result.screenOutput}. Danach dreht sich der Rotor einen Schritt weiter.`;
 
-  await wait(speed());
+  await wait(phaseDuration());
 
   rotateOneStep();
   currentIndex++;
+
   return true;
 }
 
-function speed() {
-  return Number(speedRange.value);
+function phaseDuration() {
+  const charsPerSecond = Number(speedRange.value);
+
+  const millisecondsPerCharacter = 1000 / charsPerSecond;
+
+  return millisecondsPerCharacter / 3;
+}
+
+function updateSpeedLabel() {
+  speedLabel.textContent = speedRange.value;
 }
 
 function wait(ms) {
@@ -386,7 +439,10 @@ function setButtons(disabled) {
   resetBtn.disabled = disabled;
   encryptBtn.disabled = disabled;
   decryptBtn.disabled = disabled;
-  document.querySelectorAll(".key").forEach(btn => btn.disabled = disabled);
+
+  document.querySelectorAll(".key").forEach(btn => {
+    btn.disabled = disabled;
+  });
 }
 
 async function runAll() {
@@ -413,7 +469,9 @@ async function runStep() {
 
   running = true;
   setButtons(true);
+
   await processOneCharacter();
+
   running = false;
   setButtons(false);
 }
@@ -422,8 +480,10 @@ function resetAll() {
   running = false;
   currentIndex = 0;
   outputText = "";
+
   setRotorFromKey();
   clearHighlights();
+
   stepState.textContent = "bereit";
   explainBox.textContent = "Gib einen Text ein und starte die Animation.";
 }
@@ -436,12 +496,15 @@ function normalizeTextareas() {
 buildKeyButtons();
 buildRotor();
 setRotorFromKey();
+updateSpeedLabel();
 
 encryptBtn.addEventListener("click", () => setMode("encrypt"));
 decryptBtn.addEventListener("click", () => setMode("decrypt"));
 startBtn.addEventListener("click", runAll);
 stepBtn.addEventListener("click", runStep);
 resetBtn.addEventListener("click", resetAll);
+
+speedRange.addEventListener("input", updateSpeedLabel);
 
 plainText.addEventListener("input", normalizeTextareas);
 cipherText.addEventListener("input", normalizeTextareas);
