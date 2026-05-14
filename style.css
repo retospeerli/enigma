@@ -194,6 +194,7 @@ input[type="range"] {
   display: flex;
   gap: 12px;
   pointer-events: none;
+  z-index: 5;
 }
 
 .status div {
@@ -201,6 +202,7 @@ input[type="range"] {
   border-radius: 14px;
   padding: 12px 16px;
   min-width: 150px;
+  border: 1px solid rgba(255,255,255,.08);
 }
 
 .status span {
@@ -228,8 +230,8 @@ input[type="range"] {
 
 .rotor-body {
   fill: #232d3e;
-  stroke: #8490a6;
-  stroke-width: 5;
+  stroke: #a2aec0;
+  stroke-width: 6;
 }
 
 .inner-hole {
@@ -277,6 +279,22 @@ input[type="range"] {
   fill: #111;
 }
 
+.radial-wire {
+  fill: none;
+  stroke: #7d8798;
+  stroke-width: 4;
+  stroke-linecap: round;
+  opacity: .95;
+  transition: all .12s linear;
+}
+
+.radial-wire.active {
+  stroke: var(--accent);
+  stroke-width: 8;
+  opacity: 1;
+  filter: drop-shadow(0 0 10px rgba(255,194,71,.9));
+}
+
 .wire {
   fill: none;
   stroke: var(--line);
@@ -295,14 +313,15 @@ input[type="range"] {
 
 .socket {
   fill: #232d3e;
-  stroke: var(--line);
+  stroke: #94a2b8;
   stroke-width: 3;
 }
 
 .socket.active {
   fill: var(--accent);
-  stroke: #fff1bc;
-  filter: drop-shadow(0 0 8px rgba(255,194,71,.85));
+  stroke: #fff5cc;
+  stroke-width: 4;
+  filter: drop-shadow(0 0 10px rgba(255,194,71,.95));
 }
 
 @media (max-width: 950px) {
