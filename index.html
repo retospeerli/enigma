@@ -7,79 +7,67 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="app">
-    <section class="hero">
+<main class="app">
+  <aside class="sidebar">
+    <header class="top">
       <div>
-        <p class="eyebrow">Rotor-Verschlüsselung einfach erklärt</p>
         <h1>Mini-Enigma</h1>
-        <p class="lead">
-          Stelle den Schlüsselbuchstaben ein. Danach wird jeder Buchstabe über den Rotor
-          verschlüsselt. Nach jedem Buchstaben dreht sich der Rotor einen Schritt weiter.
-        </p>
+        <p>Rotor-Verschlüsselung einfach erklärt</p>
       </div>
-      <div class="badge">1 Rotor<br>didaktisch vereinfacht</div>
+      <button id="resetBtn" class="small">↻ Zurücksetzen</button>
+    </header>
+
+    <section class="box">
+      <label for="plainText">Klartext</label>
+      <textarea id="plainText" spellcheck="false" placeholder="Text eingeben..."></textarea>
+
+      <label for="cipherText">Geheimtext</label>
+      <textarea id="cipherText" spellcheck="false" placeholder="Hier erscheint der Geheimtext..."></textarea>
+
+      <p class="hint">Leerzeichen und Satzzeichen bleiben erhalten. Verschlüsselt werden nur die Buchstaben A–Z.</p>
     </section>
 
-    <section class="panel controls">
-      <div class="control">
-        <label for="keySelect">Schlüsselbuchstabe</label>
-        <select id="keySelect"></select>
-      </div>
-
-      <div class="control">
-        <label for="modeSelect">Modus</label>
-        <select id="modeSelect">
-          <option value="encrypt">Verschlüsseln</option>
-          <option value="decrypt">Entschlüsseln</option>
-        </select>
-      </div>
-
-      <div class="control">
-        <label for="speedRange">Animation</label>
-        <input id="speedRange" type="range" min="250" max="1600" value="900" step="50">
-      </div>
-
-      <button id="startBtn">Start</button>
-      <button id="stepBtn" class="secondary">Einzelschritt</button>
-      <button id="resetBtn" class="ghost">Zurücksetzen</button>
+    <section class="box">
+      <h2>Schlüsselbuchstabe</h2>
+      <div id="keyButtons" class="keys"></div>
     </section>
 
-    <section class="workspace">
-      <section class="panel textpanel">
-        <label for="plainText">Klartext</label>
-        <textarea id="plainText" spellcheck="false" placeholder="Text eingeben..."></textarea>
-
-        <label for="cipherText">Geheimtext</label>
-        <textarea id="cipherText" spellcheck="false" placeholder="Hier erscheint die verschlüsselte Nachricht..."></textarea>
-
-        <p class="hint">
-          Leerzeichen und Satzzeichen bleiben erhalten. Verschlüsselt werden nur die Buchstaben A–Z.
-        </p>
-      </section>
-
-      <section class="machine panel">
-        <div class="status">
-          <div>
-            <span>Aktueller Rotorstand</span>
-            <strong id="rotorState">A</strong>
-          </div>
-          <div>
-            <span>Aktueller Schritt</span>
-            <strong id="stepState">bereit</strong>
-          </div>
-        </div>
-
-        <div class="rotor-wrap">
-          <svg id="rotorSvg" viewBox="0 0 700 700" aria-label="Mini-Enigma-Rotor"></svg>
-        </div>
-
-        <div class="explain" id="explainBox">
-          Gib einen Text ein und starte die Animation.
-        </div>
-      </section>
+    <section class="box">
+      <h2>Modus</h2>
+      <div class="mode-row">
+        <button id="encryptBtn" class="mode active">🔒 Verschlüsseln</button>
+        <button id="decryptBtn" class="mode">🔓 Entschlüsseln</button>
+      </div>
     </section>
-  </main>
 
-  <script src="app.js"></script>
+    <section class="box">
+      <h2>Geschwindigkeit</h2>
+      <input id="speedRange" type="range" min="250" max="1600" value="850" step="50">
+      <div class="range-labels">
+        <span>Langsam</span><span>Schnell</span>
+      </div>
+    </section>
+
+    <section class="actions">
+      <button id="startBtn">▶ Start</button>
+      <button id="stepBtn" class="secondary">▶ Einzelschritt</button>
+    </section>
+
+    <section class="explain" id="explainBox">
+      Gib einen Text ein und starte die Animation.
+    </section>
+  </aside>
+
+  <section class="stage">
+    <div class="status">
+      <div><span>Rotorstand</span><strong id="rotorState">A</strong></div>
+      <div><span>Schritt</span><strong id="stepState">bereit</strong></div>
+    </div>
+
+    <svg id="rotorSvg" viewBox="0 0 900 900" aria-label="Mini-Enigma Rotor"></svg>
+  </section>
+</main>
+
+<script src="app.js"></script>
 </body>
 </html>
