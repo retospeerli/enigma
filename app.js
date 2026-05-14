@@ -12,6 +12,13 @@ PAIRS.forEach(([a, b]) => {
   pairMap[b] = a;
 });
 
+const clickSounds = [
+  "audio/klick1.wav",
+  "audio/klick2.wav",
+  "audio/klick3.wav",
+  "audio/klick4.wav"
+];
+
 const svg = document.getElementById("rotorSvg");
 const keyButtons = document.getElementById("keyButtons");
 const encryptBtn = document.getElementById("encryptBtn");
@@ -25,7 +32,6 @@ const plainText = document.getElementById("plainText");
 const cipherText = document.getElementById("cipherText");
 const rotorState = document.getElementById("rotorState");
 const stepState = document.getElementById("stepState");
-const explainBox = document.getElementById("explainBox");
 
 let selectedKey = "A";
 let rotorOffset = 0;
@@ -359,7 +365,6 @@ async function processOneCharacter() {
   if (currentIndex >= inputText.length) {
     running = false;
     stepState.textContent = "fertig";
-    explainBox.textContent = "Die Nachricht ist fertig verarbeitet.";
     setButtons(false);
     return false;
   }
@@ -372,21 +377,18 @@ async function processOneCharacter() {
     outputText += char;
     writeOutput();
     currentIndex++;
-
     stepState.textContent = "übersprungen";
-    explainBox.textContent = `„${char}“ ist kein Buchstabe A–Z und bleibt unverändert.`;
-
     return true;
   }
+
+  playRandomClick();
 
   const result = transformLetter(char);
   const wire = findWire(result.rotorInput, result.rotorOutput);
 
   letterNodes[char].classList.add("active-in");
   textNodes[char].classList.add("dark");
-
   stepState.textContent = `${char} → ?`;
-  explainBox.textContent = `Der Strom tritt bei ${char} ein. Im Rotor landet er beim Anschluss ${result.rotorInput}.`;
 
   await wait(phaseDuration());
 
@@ -395,8 +397,6 @@ async function processOneCharacter() {
   }
 
   highlightSockets(result.rotorInput, result.rotorOutput);
-
-  explainBox.textContent = `Im Rotor folgt der Strom dem Draht von ${result.rotorInput} nach ${result.rotorOutput}.`;
 
   await wait(phaseDuration());
 
@@ -407,7 +407,6 @@ async function processOneCharacter() {
   writeOutput();
 
   stepState.textContent = `${char} → ${result.screenOutput}`;
-  explainBox.textContent = `${char} wird zu ${result.screenOutput}. Danach dreht sich der Rotor einen Schritt weiter.`;
 
   await wait(phaseDuration());
 
@@ -417,16 +416,27 @@ async function processOneCharacter() {
   return true;
 }
 
+function playRandomClick() {
+  const file = clickSounds[Math.floor(Math.random() * clickSounds.length)];
+  const sound = new Audio(file);
+  sound.volume = 0.8;
+  sound.play().catch(() => {});
+}
+
 function phaseDuration() {
   const charsPerSecond = Number(speedRange.value);
-
   const millisecondsPerCharacter = 1000 / charsPerSecond;
-
   return millisecondsPerCharacter / 3;
 }
 
 function updateSpeedLabel() {
-  speedLabel.textContent = speedRange.value;
+  const value = Number(speedRange.value);
+
+  if (value === 0.5) {
+    speedLabel.textContent = "0.5";
+  } else {
+    speedLabel.textContent = String(value);
+  }
 }
 
 function wait(ms) {
@@ -485,7 +495,6 @@ function resetAll() {
   clearHighlights();
 
   stepState.textContent = "bereit";
-  explainBox.textContent = "Gib einen Text ein und starte die Animation.";
 }
 
 function normalizeTextareas() {
