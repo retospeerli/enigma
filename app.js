@@ -12,19 +12,17 @@ PAIRS.forEach(([a, b]) => {
   pairMap[b] = a;
 });
 
-const clickSoundFiles = [
-  "audio/klick1.wav",
-  "audio/klick2.wav",
-  "audio/klick3.wav",
-  "audio/klick4.wav"
-];
+/* ========================================
+   SOUND
+======================================== */
 
-const clickSoundPool = clickSoundFiles.map(file => {
-  const audio = new Audio(file);
-  audio.preload = "auto";
-  audio.load();
-  return audio;
-});
+const clickSoundBase = new Audio("audio/klick1.wav");
+clickSoundBase.preload = "auto";
+clickSoundBase.load();
+
+/* ========================================
+   HTML
+======================================== */
 
 const svg = document.getElementById("rotorSvg");
 const keyButtons = document.getElementById("keyButtons");
@@ -40,6 +38,10 @@ const cipherText = document.getElementById("cipherText");
 const rotorState = document.getElementById("rotorState");
 const stepState = document.getElementById("stepState");
 
+/* ========================================
+   STATUS
+======================================== */
+
 let selectedKey = "A";
 let rotorOffset = 0;
 let currentIndex = 0;
@@ -54,6 +56,10 @@ const wireNodes = [];
 const socketNodes = [];
 const radialNodes = {};
 
+/* ========================================
+   GEOMETRIE
+======================================== */
+
 const CX = 450;
 const CY = 450;
 
@@ -67,7 +73,10 @@ const INNER_WIRE_R = 200;
 const INNER_HOLE_R = 112;
 
 function svgEl(name, attrs = {}) {
-  const el = document.createElementNS("http://www.w3.org/2000/svg", name);
+  const el = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    name
+  );
 
   Object.entries(attrs).forEach(([key, value]) => {
     el.setAttribute(key, value);
@@ -85,7 +94,9 @@ function angleOf(index) {
 }
 
 function polar(radius, angleDeg) {
-  const angle = (angleDeg - 90) * Math.PI / 180;
+
+  const angle =
+    (angleDeg - 90) * Math.PI / 180;
 
   return {
     x: CX + radius * Math.cos(angle),
@@ -93,45 +104,83 @@ function polar(radius, angleDeg) {
   };
 }
 
+/* ========================================
+   BUTTONS
+======================================== */
+
 function buildKeyButtons() {
+
   ALPHABET.forEach(letter => {
-    const btn = document.createElement("button");
+
+    const btn =
+      document.createElement("button");
+
     btn.className = "key";
     btn.textContent = letter;
     btn.dataset.letter = letter;
 
     btn.addEventListener("click", () => {
+
       selectedKey = letter;
+
       resetAll();
+
     });
 
     keyButtons.appendChild(btn);
+
   });
 
   updateKeyButtons();
+
 }
 
 function updateKeyButtons() {
-  document.querySelectorAll(".key").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.letter === selectedKey);
-  });
+
+  document
+    .querySelectorAll(".key")
+    .forEach(btn => {
+
+      btn.classList.toggle(
+        "active",
+        btn.dataset.letter === selectedKey
+      );
+
+    });
+
 }
 
 function setMode(newMode) {
+
   mode = newMode;
 
-  encryptBtn.classList.toggle("active", mode === "encrypt");
-  decryptBtn.classList.toggle("active", mode === "decrypt");
+  encryptBtn.classList.toggle(
+    "active",
+    mode === "encrypt"
+  );
+
+  decryptBtn.classList.toggle(
+    "active",
+    mode === "decrypt"
+  );
 
   resetAll();
+
 }
 
+/* ========================================
+   ROTOR
+======================================== */
+
 function buildRotor() {
+
   svg.innerHTML = "";
+
   wireNodes.length = 0;
   socketNodes.length = 0;
 
-  Object.keys(radialNodes).forEach(key => delete radialNodes[key]);
+  Object.keys(radialNodes)
+    .forEach(key => delete radialNodes[key]);
 
   svg.appendChild(svgEl("circle", {
     cx: CX,
@@ -145,29 +194,57 @@ function buildRotor() {
     class: "pointer"
   }));
 
-  const radialGroup = svgEl("g", { id: "radialGroup" });
+  const radialGroup =
+    svgEl("g", {
+      id: "radialGroup"
+    });
+
   svg.appendChild(radialGroup);
 
   ALPHABET.forEach((letter, i) => {
-    const angle = angleOf(i);
 
-    const letterEdge = polar(LETTER_R - LETTER_CIRCLE_R + 2, angle);
-    const rotorEdge = polar(ROTOR_R, angle);
+    const angle =
+      angleOf(i);
 
-    const radial = svgEl("line", {
-      x1: letterEdge.x,
-      y1: letterEdge.y,
-      x2: rotorEdge.x,
-      y2: rotorEdge.y,
-      class: "radial-wire",
-      "data-letter": letter
-    });
+    const letterEdge =
+      polar(
+        LETTER_R - LETTER_CIRCLE_R + 2,
+        angle
+      );
+
+    const rotorEdge =
+      polar(
+        ROTOR_R,
+        angle
+      );
+
+    const radial =
+      svgEl("line", {
+
+        x1: letterEdge.x,
+        y1: letterEdge.y,
+
+        x2: rotorEdge.x,
+        y2: rotorEdge.y,
+
+        class: "radial-wire",
+
+        "data-letter": letter
+
+      });
 
     radialGroup.appendChild(radial);
-    radialNodes[letter] = radial;
+
+    radialNodes[letter] =
+      radial;
+
   });
 
-  const rotorGroup = svgEl("g", { id: "rotorGroup" });
+  const rotorGroup =
+    svgEl("g", {
+      id: "rotorGroup"
+    });
+
   svg.appendChild(rotorGroup);
 
   rotorGroup.appendChild(svgEl("circle", {
@@ -178,39 +255,69 @@ function buildRotor() {
   }));
 
   PAIRS.forEach((pair, pairIndex) => {
-    const [a, b] = pair;
-    const path = buildWirePath(a, b, pairIndex);
 
-    const wire = svgEl("path", {
-      d: path.d,
-      class: "wire",
-      "data-a": a,
-      "data-b": b
-    });
+    const [a, b] =
+      pair;
+
+    const path =
+      buildWirePath(
+        a,
+        b,
+        pairIndex
+      );
+
+    const wire =
+      svgEl("path", {
+
+        d: path.d,
+
+        class: "wire",
+
+        "data-a": a,
+        "data-b": b
+
+      });
 
     rotorGroup.appendChild(wire);
+
     wireNodes.push(wire);
 
-    const s1 = svgEl("circle", {
-      cx: path.start.x,
-      cy: path.start.y,
-      r: 7,
-      class: "socket",
-      "data-letter": a
-    });
+    const s1 =
+      svgEl("circle", {
 
-    const s2 = svgEl("circle", {
-      cx: path.end.x,
-      cy: path.end.y,
-      r: 7,
-      class: "socket",
-      "data-letter": b
-    });
+        cx: path.start.x,
+        cy: path.start.y,
+
+        r: 7,
+
+        class: "socket",
+
+        "data-letter": a
+
+      });
+
+    const s2 =
+      svgEl("circle", {
+
+        cx: path.end.x,
+        cy: path.end.y,
+
+        r: 7,
+
+        class: "socket",
+
+        "data-letter": b
+
+      });
 
     rotorGroup.appendChild(s1);
     rotorGroup.appendChild(s2);
 
-    socketNodes.push(s1, s2);
+    socketNodes.push(
+      s1,
+      s2
+    );
+
   });
 
   rotorGroup.appendChild(svgEl("circle", {
@@ -228,367 +335,834 @@ function buildRotor() {
   }));
 
   ALPHABET.forEach((letter, i) => {
-    const p = polar(LETTER_R, angleOf(i));
 
-    const circle = svgEl("circle", {
-      cx: p.x,
-      cy: p.y,
-      r: LETTER_CIRCLE_R,
-      class: "letter-circle",
-      "data-letter": letter
-    });
+    const p =
+      polar(
+        LETTER_R,
+        angleOf(i)
+      );
 
-    const text = svgEl("text", {
-      x: p.x,
-      y: p.y + 2,
-      class: "letter-text",
-      "data-letter": letter
-    });
+    const circle =
+      svgEl("circle", {
 
-    text.textContent = letter;
+        cx: p.x,
+        cy: p.y,
+
+        r: LETTER_CIRCLE_R,
+
+        class: "letter-circle",
+
+        "data-letter": letter
+
+      });
+
+    const text =
+      svgEl("text", {
+
+        x: p.x,
+        y: p.y + 2,
+
+        class: "letter-text",
+
+        "data-letter": letter
+
+      });
+
+    text.textContent =
+      letter;
 
     svg.appendChild(circle);
     svg.appendChild(text);
 
-    letterNodes[letter] = circle;
-    textNodes[letter] = text;
+    letterNodes[letter] =
+      circle;
+
+    textNodes[letter] =
+      text;
+
   });
 
   updateRotorRotation(false);
+
 }
 
-function buildWirePath(a, b, pairIndex) {
-  const ia = indexOf(a);
-  const ib = indexOf(b);
+function buildWirePath(
+  a,
+  b,
+  pairIndex
+) {
 
-  const start = polar(SOCKET_R, angleOf(ia));
-  const end = polar(SOCKET_R, angleOf(ib));
+  const ia =
+    indexOf(a);
 
-  const layer = pairIndex % 5;
-  const r1 = INNER_WIRE_R - layer * 18;
-  const r2 = INNER_WIRE_R - ((layer + 2) % 5) * 18;
+  const ib =
+    indexOf(b);
 
-  const p1 = polar(r1, angleOf(ia));
-  const p2 = polar(r2, angleOf(ib));
+  const start =
+    polar(
+      SOCKET_R,
+      angleOf(ia)
+    );
 
-  const p3 = orthogonalBend(p1, p2);
+  const end =
+    polar(
+      SOCKET_R,
+      angleOf(ib)
+    );
+
+  const layer =
+    pairIndex % 5;
+
+  const r1 =
+    INNER_WIRE_R -
+    layer * 18;
+
+  const r2 =
+    INNER_WIRE_R -
+    ((layer + 2) % 5) * 18;
+
+  const p1 =
+    polar(
+      r1,
+      angleOf(ia)
+    );
+
+  const p2 =
+    polar(
+      r2,
+      angleOf(ib)
+    );
+
+  const p3 =
+    orthogonalBend(
+      p1,
+      p2
+    );
 
   const d = [
-    `M ${start.x.toFixed(1)} ${start.y.toFixed(1)}`,
-    `L ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`,
-    `L ${p3.x.toFixed(1)} ${p3.y.toFixed(1)}`,
-    `L ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`,
-    `L ${end.x.toFixed(1)} ${end.y.toFixed(1)}`
+
+    `M ${start.x} ${start.y}`,
+
+    `L ${p1.x} ${p1.y}`,
+
+    `L ${p3.x} ${p3.y}`,
+
+    `L ${p2.x} ${p2.y}`,
+
+    `L ${end.x} ${end.y}`
+
   ].join(" ");
 
-  return { d, start, end };
+  return {
+    d,
+    start,
+    end
+  };
+
 }
 
-function orthogonalBend(p1, p2) {
-  const horizontalFirst = Math.abs(p1.x - CX) > Math.abs(p1.y - CY);
+function orthogonalBend(
+  p1,
+  p2
+) {
+
+  const horizontalFirst =
+    Math.abs(p1.x - CX) >
+    Math.abs(p1.y - CY);
 
   if (horizontalFirst) {
-    return { x: p2.x, y: p1.y };
+
+    return {
+      x: p2.x,
+      y: p1.y
+    };
+
   }
 
-  return { x: p1.x, y: p2.y };
+  return {
+    x: p1.x,
+    y: p2.y
+  };
+
 }
+
+/* ========================================
+   ROTATION
+======================================== */
 
 function setRotorFromKey() {
-  rotorOffset = indexOf(selectedKey);
+
+  rotorOffset =
+    indexOf(selectedKey);
 
   updateRotorRotation(false);
+
   updateRotorState();
+
   updateKeyButtons();
+
 }
 
-function updateRotorRotation(animated = true) {
-  const group = document.getElementById("rotorGroup");
+function updateRotorRotation(
+  animated = true
+) {
+
+  const group =
+    document.getElementById(
+      "rotorGroup"
+    );
+
   if (!group) return;
 
-  const degrees = rotorOffset * (360 / 26);
+  const degrees =
+    rotorOffset *
+    (360 / 26);
 
   if (!animated) {
-    group.style.transition = "none";
-    group.style.transform = `rotate(${degrees}deg)`;
+
+    group.style.transition =
+      "none";
+
+    group.style.transform =
+      `rotate(${degrees}deg)`;
 
     requestAnimationFrame(() => {
-      group.style.transition = "";
+
+      group.style.transition =
+        "";
+
     });
 
     return;
+
   }
 
-  group.style.transform = `rotate(${degrees}deg)`;
+  group.style.transform =
+    `rotate(${degrees}deg)`;
+
 }
 
 function updateRotorState() {
-  rotorState.textContent = ALPHABET[rotorOffset % 26];
+
+  rotorState.textContent =
+    ALPHABET[
+      rotorOffset % 26
+    ];
+
 }
 
 function rotateOneStep() {
-  rotorOffset = (rotorOffset + 1) % 26;
+
+  rotorOffset =
+    (rotorOffset + 1) % 26;
 
   updateRotorRotation(true);
+
   updateRotorState();
+
 }
 
-function shiftedToRotorLetter(screenLetter) {
-  const screenIndex = indexOf(screenLetter);
-  const rotorIndex = (screenIndex - rotorOffset + 26) % 26;
+/* ========================================
+   CRYPTO
+======================================== */
 
-  return ALPHABET[rotorIndex];
+function shiftedToRotorLetter(
+  screenLetter
+) {
+
+  const screenIndex =
+    indexOf(
+      screenLetter
+    );
+
+  const rotorIndex =
+    (
+      screenIndex -
+      rotorOffset +
+      26
+    ) % 26;
+
+  return ALPHABET[
+    rotorIndex
+  ];
+
 }
 
-function rotorToScreenLetter(rotorLetter) {
-  const rotorIndex = indexOf(rotorLetter);
-  const screenIndex = (rotorIndex + rotorOffset) % 26;
+function rotorToScreenLetter(
+  rotorLetter
+) {
 
-  return ALPHABET[screenIndex];
+  const rotorIndex =
+    indexOf(
+      rotorLetter
+    );
+
+  const screenIndex =
+    (
+      rotorIndex +
+      rotorOffset
+    ) % 26;
+
+  return ALPHABET[
+    screenIndex
+  ];
+
 }
 
-function transformLetter(screenLetter) {
-  const rotorInput = shiftedToRotorLetter(screenLetter);
-  const rotorOutput = pairMap[rotorInput];
-  const screenOutput = rotorToScreenLetter(rotorOutput);
+function transformLetter(
+  screenLetter
+) {
+
+  const rotorInput =
+    shiftedToRotorLetter(
+      screenLetter
+    );
+
+  const rotorOutput =
+    pairMap[
+      rotorInput
+    ];
+
+  const screenOutput =
+    rotorToScreenLetter(
+      rotorOutput
+    );
 
   return {
     rotorInput,
     rotorOutput,
     screenOutput
   };
+
 }
 
+/* ========================================
+   HIGHLIGHTS
+======================================== */
+
 function clearHighlights() {
-  Object.values(letterNodes).forEach(node => {
-    node.classList.remove("active-in", "active-out");
+
+  Object.values(
+    letterNodes
+  ).forEach(node => {
+
+    node.classList.remove(
+      "active-in",
+      "active-out"
+    );
+
   });
 
-  Object.values(textNodes).forEach(node => {
-    node.classList.remove("dark");
+  Object.values(
+    textNodes
+  ).forEach(node => {
+
+    node.classList.remove(
+      "dark"
+    );
+
   });
 
   wireNodes.forEach(node => {
-    node.classList.remove("active");
+
+    node.classList.remove(
+      "active"
+    );
+
   });
 
   socketNodes.forEach(node => {
-    node.classList.remove("active");
+
+    node.classList.remove(
+      "active"
+    );
+
   });
 
-  Object.values(radialNodes).forEach(node => {
-    node.classList.remove("active");
+  Object.values(
+    radialNodes
+  ).forEach(node => {
+
+    node.classList.remove(
+      "active"
+    );
+
   });
+
 }
 
-function findWire(a, b) {
-  return wireNodes.find(wire => {
-    const wa = wire.dataset.a;
-    const wb = wire.dataset.b;
+function findWire(
+  a,
+  b
+) {
 
-    return (wa === a && wb === b) || (wa === b && wb === a);
-  });
-}
+  return wireNodes.find(
+    wire => {
 
-function highlightSockets(a, b) {
-  socketNodes.forEach(socket => {
-    if (socket.dataset.letter === a || socket.dataset.letter === b) {
-      socket.classList.add("active");
+      const wa =
+        wire.dataset.a;
+
+      const wb =
+        wire.dataset.b;
+
+      return (
+        (
+          wa === a &&
+          wb === b
+        ) ||
+        (
+          wa === b &&
+          wb === a
+        )
+      );
+
     }
-  });
+  );
+
 }
 
-function highlightRadial(screenLetter) {
-  if (radialNodes[screenLetter]) {
-    radialNodes[screenLetter].classList.add("active");
-  }
+function highlightSockets(
+  a,
+  b
+) {
+
+  socketNodes.forEach(
+    socket => {
+
+      if (
+        socket.dataset.letter === a ||
+        socket.dataset.letter === b
+      ) {
+
+        socket.classList.add(
+          "active"
+        );
+
+      }
+
+    }
+  );
+
 }
+
+function highlightRadial(
+  letter
+) {
+
+  if (
+    radialNodes[letter]
+  ) {
+
+    radialNodes[
+      letter
+    ].classList.add(
+      "active"
+    );
+
+  }
+
+}
+
+/* ========================================
+   RUN
+======================================== */
 
 function prepareRun() {
-  inputText = mode === "encrypt"
-    ? plainText.value.toUpperCase()
-    : cipherText.value.toUpperCase();
+
+  inputText =
+    mode === "encrypt"
+      ? plainText.value.toUpperCase()
+      : cipherText.value.toUpperCase();
 
   outputText = "";
   currentIndex = 0;
 
   setRotorFromKey();
+
   clearHighlights();
 
-  if (mode === "encrypt") {
-    cipherText.value = "";
+  if (
+    mode === "encrypt"
+  ) {
+
+    cipherText.value =
+      "";
+
   } else {
-    plainText.value = "";
+
+    plainText.value =
+      "";
+
   }
+
 }
 
 function writeOutput() {
-  if (mode === "encrypt") {
-    cipherText.value = outputText;
+
+  if (
+    mode === "encrypt"
+  ) {
+
+    cipherText.value =
+      outputText;
+
   } else {
-    plainText.value = outputText;
+
+    plainText.value =
+      outputText;
+
   }
+
 }
 
 async function processOneCharacter() {
-  if (currentIndex >= inputText.length) {
+
+  if (
+    currentIndex >=
+    inputText.length
+  ) {
+
     running = false;
-    stepState.textContent = "fertig";
+
+    stepState.textContent =
+      "fertig";
+
     setButtons(false);
+
     return false;
+
   }
 
   clearHighlights();
 
-  const char = inputText[currentIndex];
+  const char =
+    inputText[
+      currentIndex
+    ];
 
-  if (!ALPHABET.includes(char)) {
+  if (
+    !ALPHABET.includes(
+      char
+    )
+  ) {
+
     outputText += char;
+
     writeOutput();
+
     currentIndex++;
-    stepState.textContent = "übersprungen";
+
     return true;
+
   }
 
   playRandomClick();
 
-  const result = transformLetter(char);
-  const wire = findWire(result.rotorInput, result.rotorOutput);
+  const result =
+    transformLetter(
+      char
+    );
 
-  letterNodes[char].classList.add("active-in");
-  textNodes[char].classList.add("dark");
-  highlightRadial(char);
+  const wire =
+    findWire(
+      result.rotorInput,
+      result.rotorOutput
+    );
 
-  stepState.textContent = `${char} → ?`;
+  letterNodes[
+    char
+  ].classList.add(
+    "active-in"
+  );
 
-  await wait(phaseDuration());
+  textNodes[
+    char
+  ].classList.add(
+    "dark"
+  );
+
+  highlightRadial(
+    char
+  );
+
+  await wait(
+    phaseDuration()
+  );
 
   if (wire) {
-    wire.classList.add("active");
+
+    wire.classList.add(
+      "active"
+    );
+
   }
 
-  highlightSockets(result.rotorInput, result.rotorOutput);
+  highlightSockets(
+    result.rotorInput,
+    result.rotorOutput
+  );
 
-  await wait(phaseDuration());
+  await wait(
+    phaseDuration()
+  );
 
-  letterNodes[result.screenOutput].classList.add("active-out");
-  textNodes[result.screenOutput].classList.add("dark");
-  highlightRadial(result.screenOutput);
+  letterNodes[
+    result.screenOutput
+  ].classList.add(
+    "active-out"
+  );
 
-  outputText += result.screenOutput;
+  textNodes[
+    result.screenOutput
+  ].classList.add(
+    "dark"
+  );
+
+  highlightRadial(
+    result.screenOutput
+  );
+
+  outputText +=
+    result.screenOutput;
+
   writeOutput();
 
-  stepState.textContent = `${char} → ${result.screenOutput}`;
-
-  await wait(phaseDuration());
+  await wait(
+    phaseDuration()
+  );
 
   rotateOneStep();
 
   currentIndex++;
 
   return true;
+
 }
+
+/* ========================================
+   SOUND
+======================================== */
 
 function playRandomClick() {
-  const baseSound =
-    clickSoundPool[
-      Math.floor(Math.random() * clickSoundPool.length)
-    ];
 
-  const sound = baseSound.cloneNode(true);
+  const sound =
+    clickSoundBase
+      .cloneNode(true);
 
-  sound.volume = 0.8;
-  sound.currentTime = 0;
+  sound.volume =
+    0.8;
 
-  sound.play().catch(() => {});
+  sound.currentTime =
+    0;
+
+  sound.play()
+    .catch(() => {});
+
 }
 
-function phaseDuration() {
-  const charsPerSecond = Number(speedRange.value);
-  const millisecondsPerCharacter = 1000 / charsPerSecond;
+/* ========================================
+   TEMPO
+======================================== */
 
-  return millisecondsPerCharacter / 3;
+function phaseDuration() {
+
+  const charsPerSecond =
+    Number(
+      speedRange.value
+    );
+
+  const milliseconds =
+    1000 /
+    charsPerSecond;
+
+  return (
+    milliseconds / 3
+  );
+
 }
 
 function updateSpeedLabel() {
-  speedLabel.textContent = speedRange.value;
+
+  speedLabel.textContent =
+    speedRange.value;
+
 }
 
 function wait(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+
+  return new Promise(
+    resolve =>
+      setTimeout(
+        resolve,
+        ms
+      )
+  );
+
 }
 
-function setButtons(disabled) {
-  startBtn.disabled = disabled;
-  stepBtn.disabled = disabled;
-  resetBtn.disabled = disabled;
-  encryptBtn.disabled = disabled;
-  decryptBtn.disabled = disabled;
+/* ========================================
+   UI
+======================================== */
 
-  document.querySelectorAll(".key").forEach(btn => {
-    btn.disabled = disabled;
-  });
+function setButtons(
+  disabled
+) {
+
+  startBtn.disabled =
+    disabled;
+
+  stepBtn.disabled =
+    disabled;
+
+  resetBtn.disabled =
+    disabled;
+
+  encryptBtn.disabled =
+    disabled;
+
+  decryptBtn.disabled =
+    disabled;
+
+  document
+    .querySelectorAll(
+      ".key"
+    )
+    .forEach(btn => {
+
+      btn.disabled =
+        disabled;
+
+    });
+
 }
 
 async function runAll() {
-  if (running) return;
+
+  if (running)
+    return;
 
   prepareRun();
+
   running = true;
+
   setButtons(true);
 
-  while (running && currentIndex < inputText.length) {
+  while (
+    running &&
+    currentIndex <
+    inputText.length
+  ) {
+
     await processOneCharacter();
+
   }
 
   running = false;
+
   setButtons(false);
+
 }
 
 async function runStep() {
-  if (running) return;
 
-  if (currentIndex === 0) {
+  if (running)
+    return;
+
+  if (
+    currentIndex === 0
+  ) {
+
     prepareRun();
+
   }
 
   running = true;
+
   setButtons(true);
 
   await processOneCharacter();
 
   running = false;
+
   setButtons(false);
+
 }
 
 function resetAll() {
+
   running = false;
+
   currentIndex = 0;
+
   outputText = "";
 
   setRotorFromKey();
+
   clearHighlights();
 
-  stepState.textContent = "bereit";
+  stepState.textContent =
+    "bereit";
+
 }
 
 function normalizeTextareas() {
-  plainText.value = plainText.value.toUpperCase();
-  cipherText.value = cipherText.value.toUpperCase();
+
+  plainText.value =
+    plainText.value.toUpperCase();
+
+  cipherText.value =
+    cipherText.value.toUpperCase();
+
 }
 
+/* ========================================
+   START
+======================================== */
+
 buildKeyButtons();
+
 buildRotor();
+
 setRotorFromKey();
+
 updateSpeedLabel();
 
-encryptBtn.addEventListener("click", () => setMode("encrypt"));
-decryptBtn.addEventListener("click", () => setMode("decrypt"));
-startBtn.addEventListener("click", runAll);
-stepBtn.addEventListener("click", runStep);
-resetBtn.addEventListener("click", resetAll);
+encryptBtn.addEventListener(
+  "click",
+  () => setMode("encrypt")
+);
 
-speedRange.addEventListener("input", updateSpeedLabel);
+decryptBtn.addEventListener(
+  "click",
+  () => setMode("decrypt")
+);
 
-plainText.addEventListener("input", normalizeTextareas);
-cipherText.addEventListener("input", normalizeTextareas);
+startBtn.addEventListener(
+  "click",
+  runAll
+);
+
+stepBtn.addEventListener(
+  "click",
+  runStep
+);
+
+resetBtn.addEventListener(
+  "click",
+  resetAll
+);
+
+speedRange.addEventListener(
+  "input",
+  updateSpeedLabel
+);
+
+plainText.addEventListener(
+  "input",
+  normalizeTextareas
+);
+
+cipherText.addEventListener(
+  "input",
+  normalizeTextareas
+);
